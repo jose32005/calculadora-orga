@@ -1,7 +1,7 @@
 .data
 
     	input: .space 17
-    	menu: .asciiz "\nSeleccione la representacion de entrada:\n1. Binario en Complemento a 2\n2. Decimal Empaquetado\n3. Base 10\n4. Octal\n5. Hexadecimal\n>>> "
+    	menu: .asciiz "\nSeleccione la representacion de entrada:\n1. Binario en Complemento a 2\n2. Decimal Empaquetado\n3. Base 10\n4. Octal\n5. Hexadecimal\n6.Punto Flotante\n>>> "
     	error: .asciiz "\nOpcion invalida. Por favor intente de nuevo.\n"
     	salto: .asciiz "\n"
     	solicitud: .asciiz "Por favor, ingrese el numero a convertir: "
@@ -52,6 +52,7 @@ main:
     	beq $t0, 3, inputBase10
     	beq $t0, 4, inputOctal
     	beq $t0, 5, inputHexadecimal
+    	beq $t0, 6, inputFraccionario
 
     	PRINT_MSG error  # Opción inválida en menu
     	j main
@@ -82,6 +83,10 @@ inputHexadecimal:
     	READ_INPUT  # Leer entrada binaria
     	jal hexadecimal_decimal  # Llamar a la función de conversión a decimal
     	j conversionCompleta
+    	
+inputFraccionario:
+    	READ_INPUT  # Leer entrada binaria
+    	j conversionFraccionaria
     
 
 ##################################### BASE 10 A DECIMAL ################################################
@@ -471,6 +476,7 @@ fin_invertir:
 
 
 ##################################### DECIMAL A BINARIO COMPLEMENTO A 2 ################################################		
+
 decimal_binario: 
 
  	PRINT_MSG Binario
@@ -500,6 +506,89 @@ write_char:
 
 end_loop:
     	PRINT_MSG output 	#Imprimir resultado de la conversion
+    	
+    	li $v0 10
+    	syscall
+
+
+##################################### CONVERISON FRACCIONARIA ################################################
+conversionFraccionaria:
+# Inicializa los registros
+        li $t1 0           # $t1 = 0, índice para recorrer 'space_number'
+        li $t5 1           # $t5 = 1, inicializa divisor
+        li $t2 0           # $t2 = 0, inicializa número decimal acumulado
+        
+bucle_dec_r:
+        lbu $t3 input($t1)    # Carga byte desde 'espacio_numero' en $t3
+        
+        blt $t3 48 condicion_dec_r    # Si $t3 < '0' (ASCII 48), salta a condicion_dec_r
+        add $t3 $t3 -48               # Convierte ASCII a número decimal
+        
+        mul $t2 $t2 10                # Multiplica acumulador por 10
+        add $t2 $t2 $t3               # Suma el nuevo dígito
+        beqz $t4 no_sumar             # Si $t4 es cero, salta a no_sumar
+        mul $t5 $t5 10                # Multiplica divisor por 10
+no_sumar:
+        b continuacion_r              # Salta a continuacion_r
+        
+condicion_dec_r:
+        # Si $t3 es espacio o salto de línea, termina el bucle
+        beq $t3 0 fin_bucle_dec_r      # Si $t3 es NULL, salta a fin_bucle_dec_r
+        beq $t3 10 fin_bucle_dec_r     # Si $t3 es salto de línea, salta a fin_bucle_dec_r
+        li $t4 1                      # Marca que ha encontrado un espacio
+        
+continuacion_r:
+        add $t1 $t1 1                 # Incrementa índice
+        b bucle_dec_r                 # Salta a bucle_dec_r
+        
+fin_bucle_dec_r:
+        # Divide el número decimal acumulado por el divisor
+        div $t2 $t2 $t5
+        mfhi $t5                      # Guarda el residuo en $t5
+        
+        li $t6 1                      # Inicializa divisor para parte fraccionaria
+verificar_decimal:
+        div $t5 $t6                   # Divide residuo por divisor
+        mflo $t1                      # Guarda el cociente en $t1
+        
+        beqz $t1 fin_verificar_decimal    # Si el cociente es 0, termina el bucle
+        mul $t6 $t6 10                # Multiplica el divisor por 10
+        b verificar_decimal           # Repite el proceso
+        
+fin_verificar_decimal:
+        div $t1 $t6 10                # Divide cociente entre 10
+        div $t5 $t5 $t1               # Divide residuo actualizado por cociente
+        
+        li $t0 0                      # Inicializa índice para resultado binario
+        li $t3 22                     # Inicializa contador de bits
+        
+bucle_r_bin_1:
+        bltz $t3 fin_bucle_bin_r_1     # Si $t3 es negativo, termina el bucle
+        
+        binario($t2, $t3, $t0)         # Convierte a binario la parte entera
+        
+        add $t0 $t0 1                 # Incrementa índice
+        add $t3 $t3 -1                # Decrementa contador de bits
+        b bucle_r_bin_1                # Repite el proceso
+        
+fin_bucle_bin_r_1:
+        li $t1 46                     # Carga punto (ASCII 46)
+        sb $t1 input($t0)      # Almacena punto en 'espacio_numero'
+        add $t0 $t0 1                 # Incrementa índice
+        
+        li $t3 7                      # Inicializa contador de bits para parte fraccionaria
+bucle_r_bin_2:
+        bltz $t3 fin_bucle_bin_r_2     # Si $t3 es negativo, termina el bucle
+        
+        binario($t5, $t3, $t0)         # Convierte a binario la parte fraccionaria
+        
+        add $t0 $t0 1                 # Incrementa índice
+        add $t3 $t3 -1                # Decrementa contador de bits
+        b bucle_r_bin_2                # Repite el proceso
+        
+fin_bucle_bin_r_2:
+       	
+    	
     	
 	
 	
