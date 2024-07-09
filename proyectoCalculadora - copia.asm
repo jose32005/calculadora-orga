@@ -565,7 +565,12 @@ fin_verificar_decimal:
 bucle_r_bin_1:
         bltz $t3 fin_bucle_bin_r_1     # Si $t3 es negativo, termina el bucle
         
-        binario($t2, $t3, $t0)         # Convierte a binario la parte entera
+        
+        srlv $t1, $t2, $t3             # Desplaza a la derecha el número decimal por t3
+        andi $t1, $t1, 1               # Realiza AND con 1
+        addi $t1, $t1, 48              # Convierte a ASCII
+        sb $t1, output($t0)    # Almacena en espacio_numero  
+             
         
         add $t0 $t0 1                 # Incrementa índice
         add $t3 $t3 -1                # Decrementa contador de bits
@@ -573,20 +578,26 @@ bucle_r_bin_1:
         
 fin_bucle_bin_r_1:
         li $t1 46                     # Carga punto (ASCII 46)
-        sb $t1 input($t0)      # Almacena punto en 'espacio_numero'
+        sb $t1 output($t0)      # Almacena punto en 'espacio_numero'
         add $t0 $t0 1                 # Incrementa índice
         
         li $t3 7                      # Inicializa contador de bits para parte fraccionaria
 bucle_r_bin_2:
         bltz $t3 fin_bucle_bin_r_2     # Si $t3 es negativo, termina el bucle
         
-        binario($t5, $t3, $t0)         # Convierte a binario la parte fraccionaria
+        srlv $t1, $t5, $t3             # Desplaza a la derecha el residuo por t3
+        andi $t1, $t1, 1               # Realiza AND con 1
+        addi $t1, $t1, 48              # Convierte a ASCII
+        sb $t1, output($t0)    	      # Almacena en espacio_numero
         
         add $t0 $t0 1                 # Incrementa índice
         add $t3 $t3 -1                # Decrementa contador de bits
         b bucle_r_bin_2                # Repite el proceso
         
 fin_bucle_bin_r_2:
+	
+	sb $zero, output($t0)
+	PRINT_MSG output
        	
     	
     	
